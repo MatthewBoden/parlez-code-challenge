@@ -4,13 +4,13 @@ A clean, async Python application that connects to OpenAI's API and provides a s
 
 ## Features
 
-- ✅ **Streaming Responses**: Real-time display of AI responses as they're generated
-- ✅ **Conversation Memory**: Maintains full conversation history across multiple interactions
-- ✅ **Async/Await**: Built with Python async/await for efficient I/O handling
-- ✅ **Environment Variables**: Secure API key management via `.env` file
-- ✅ **Unit Tests**: Comprehensive test coverage for core components
-- ✅ **Docker Support**: Easy containerization with included Dockerfile
-- ✅ **Clean Architecture**: Well-structured, commented code
+-  **Streaming Responses**: Real-time display of AI responses as they're generated
+-  **Conversation Memory**: Maintains full conversation history across multiple interactions
+-  **Async/Await**: Built with Python async/await for efficient I/O handling
+-  **Environment Variables**: Secure API key management via `.env` file
+-  **Unit Tests**: Comprehensive test coverage for core components
+-  **Docker Support**: Easy containerization with included Dockerfile
+-  **Clean Architecture**: Well-structured, commented code
 
 ## Requirements
 
