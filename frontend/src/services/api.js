@@ -28,42 +28,78 @@ export async function sendMessage(message, onChunk, onComplete) {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    let accumulatedResponse = ''
+    let completed = false
 
-    while (true) {
-      const { done, value } = await reader.read()
-      
-      if (done) break
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) {
+          // Stream ended - ensure completion callback is called if not already
+          if (!completed) {
+            completed = true
+            onComplete(accumulatedResponse || '')
+          }
+          break
+        }
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n\n')
-      buffer = lines.pop() || ''
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n\n')
+        buffer = lines.pop() || ''
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6))
-            
-            if (data.error) {
-              throw new Error(data.error)
-            }
-            
-            if (data.chunk) {
-              onChunk(data.chunk)
-            }
-            
-            if (data.done) {
-              if (data.full_response) {
-                onComplete(data.full_response)
-              } else {
-                onComplete('')
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.error) {
+                if (!completed) {
+                  completed = true
+                  onComplete(accumulatedResponse || '')
+                }
+                throw new Error(data.error)
               }
-              return
+              
+              if (data.chunk) {
+                accumulatedResponse += data.chunk
+                onChunk(data.chunk)
+              }
+              
+              if (data.done) {
+                if (!completed) {
+                  completed = true
+                  if (data.full_response) {
+                    onComplete(data.full_response)
+                  } else {
+                    onComplete(accumulatedResponse || '')
+                  }
+                }
+                return
+              }
+            } catch (e) {
+              // If it's a JSON parse error, just skip this line
+              if (e instanceof SyntaxError) {
+                console.error('Error parsing SSE JSON:', e)
+                continue
+              }
+              // If it's an actual error from server, complete and throw
+              if (!completed) {
+                completed = true
+                onComplete(accumulatedResponse || '')
+              }
+              throw e
             }
-          } catch (e) {
-            console.error('Error parsing SSE data:', e)
           }
         }
       }
+    } catch (streamError) {
+      // Ensure completion callback is called even on stream errors
+      if (!completed) {
+        completed = true
+        onComplete(accumulatedResponse || '')
+      }
+      throw streamError
     }
   } catch (error) {
     console.error('Error sending message:', error)
